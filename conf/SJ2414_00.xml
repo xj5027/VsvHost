@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--SJ2414网络配置-->
+<root>
+	<networks>
+		<network type="ECT_UAV" 			ip="127.0.0.1"   port="6032" enable="1"/>			<!-- 接收地面站无人机信息-->
+		<network type="ECT_ENVIROMENT" 		ip="127.0.0.1"   port="6031" enable="1"/>    		<!-- 接收地面站环境设置信息-->
+		<network type="ECT_ViCenter" 		ip="127.0.0.1"  port="3001" enable="1"/> 			<!-- ViCenter-->
+	</networks>
+</root>
