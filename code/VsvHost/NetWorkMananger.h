@@ -25,7 +25,9 @@ enum class ENetWorkType : uint8_t {
     ECT_ENVIROMENT,                               // 接收地面站环境设置信息;
     ECT_ViCenter,                                 // 主控软件;
     ECT_WEATHERRADAR,                             // 气象雷达;
-    ECT_VIDEOCONTRL                               // 视屏控制;
+    ECT_VIDEOCONTRL,                               // 视屏控制;
+    ECT_QSVBE,                                    // QSVBE 战场仿真;
+    ECT_924                                       // 924数据端;
 };
 
 public:
@@ -37,6 +39,7 @@ public:
 
   bool InitNetWork();
 private:
+  bool InitSingleNetWork(ENetWorkType type, bool required = true);
   void InitThread();
   void UnintThread();
   

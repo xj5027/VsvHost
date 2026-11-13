@@ -105,93 +105,70 @@ bool NetWorkManager::ReadConf(std::string joson_file)
 
 bool NetWorkManager::InitNetWork()
 {
-    const auto uav_it = map_net_conf_.find(ENetWorkType::ECT_UAV);
-    if (uav_it == map_net_conf_.end())
+    if (!InitSingleNetWork(ENetWorkType::ECT_UAV) ||
+        !InitSingleNetWork(ENetWorkType::ECT_ENVIROMENT) ||
+        !InitSingleNetWork(ENetWorkType::ECT_ViCenter) ||
+        !InitSingleNetWork(ENetWorkType::ECT_WEATHERRADAR) ||
+        !InitSingleNetWork(ENetWorkType::ECT_VIDEOCONTRL, false))
     {
-        Log::Error("Missing required network configuration: ECT_UAV");
         return false;
-    }
-    if (uav_it->second.enabled)
-    {
-        const NetConf &conf = uav_it->second;
-        const bool is_init = NetWorkUav::GetInstance().InitNetWork(
-            conf.recv_ip, conf.recv_port, conf.send_ip, conf.send_port);
-        if (!is_init)
-        {
-            Log::Error("Network initialization failed: ECT_UAV");
-            return false;
-        }
-    }
-
-    const auto environment_it = map_net_conf_.find(ENetWorkType::ECT_ENVIROMENT);
-    if (environment_it == map_net_conf_.end())
-    {
-        Log::Error("Missing required network configuration: ECT_ENVIROMENT");
-        return false;
-    }
-    if (environment_it->second.enabled)
-    {
-        const NetConf &conf = environment_it->second;
-        const bool is_init = NetWorkEnviroment::GetInstance().InitNetWork(
-            conf.recv_ip, conf.recv_port, conf.send_ip, conf.send_port);
-        if (!is_init)
-        {
-            Log::Error("Network initialization failed: ECT_ENVIROMENT");
-            return false;
-        }
-    }
-
-    const auto center_it = map_net_conf_.find(ENetWorkType::ECT_ViCenter);
-    if (center_it == map_net_conf_.end())
-    {
-        Log::Error("Missing required network configuration: ECT_ViCenter");
-        return false;
-    }
-    if (center_it->second.enabled)
-    {
-        const NetConf &conf = center_it->second;
-        const bool is_init = NetWorkCenter::GetInstance().InitNetWork(
-            conf.recv_ip, conf.recv_port, conf.send_ip, conf.send_port);
-        if (!is_init)
-        {
-            Log::Error("Network initialization failed: ECT_ViCenter");
-            return false;
-        }
-        NetWorkCenter::GetInstance().Init();
-    }
-
-    const auto radar_it = map_net_conf_.find(ENetWorkType::ECT_WEATHERRADAR);
-    if (radar_it == map_net_conf_.end())
-    {
-        Log::Error("Missing required network configuration: ECT_WEATHERRADAR");
-        return false;
-    }
-    if (radar_it->second.enabled)
-    {
-        const NetConf &conf = radar_it->second;
-        const bool is_init = NetWorkWeatherRadar::GetInstance().InitNetWork(
-            conf.recv_ip, conf.recv_port, conf.send_ip, conf.send_port);
-        if (!is_init)
-        {
-            Log::Error("Network initialization failed: ECT_WEATHERRADAR");
-            return false;
-        }
-    }
-
-    const auto video_it = map_net_conf_.find(ENetWorkType::ECT_VIDEOCONTRL);
-    if (video_it != map_net_conf_.end() && video_it->second.enabled)
-    {
-        const NetConf &conf = video_it->second;
-        const bool is_init = NetWorkVideoContrl::GetInstance().InitNetWork(
-            conf.recv_ip, conf.recv_port, conf.send_ip, conf.send_port);
-        if (!is_init)
-        {
-            Log::Error("Network initialization failed: ECT_VIDEOCONTRL");
-            return false;
-        }
     }
 
     Log::Message("Network initialization complete");
+    return true;
+}
+
+bool NetWorkManager::InitSingleNetWork(ENetWorkType type, bool required)
+{
+    const std::string type_name(Enum::enum_name(type));
+    const auto it = map_net_conf_.find(type);
+    if (it == map_net_conf_.end())
+    {
+        if (required)
+        {
+            Log::Error("Missing required network configuration: %s", type_name.c_str());
+        }
+        return !required;
+    }
+
+    const NetConf &conf = it->second;
+    if (!conf.enabled)
+    {
+        return true;
+    }
+
+    NetWorkBase *network = nullptr;
+    switch (type)
+    {
+    case ENetWorkType::ECT_UAV:
+        network = &NetWorkUav::GetInstance();
+        break;
+    case ENetWorkType::ECT_ENVIROMENT:
+        network = &NetWorkEnviroment::GetInstance();
+        break;
+    case ENetWorkType::ECT_ViCenter:
+        network = &NetWorkCenter::GetInstance();
+        break;
+    case ENetWorkType::ECT_WEATHERRADAR:
+        network = &NetWorkWeatherRadar::GetInstance();
+        break;
+    case ENetWorkType::ECT_VIDEOCONTRL:
+        network = &NetWorkVideoContrl::GetInstance();
+        break;
+    default:
+        Log::Error("Unsupported network type: %s", type_name.c_str());
+        return false;
+    }
+
+    if (!network->InitNetWork(conf.recv_ip, conf.recv_port, conf.send_ip, conf.send_port))
+    {
+        Log::Error("Network initialization failed: %s", type_name.c_str());
+        return false;
+    }
+    if (type == ENetWorkType::ECT_ViCenter)
+    {
+        NetWorkCenter::GetInstance().Init();
+    }
     return true;
 }
 
